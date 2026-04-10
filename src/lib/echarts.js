@@ -1,5 +1,5 @@
 import * as echarts from 'echarts/core'
-import { MapChart, LineChart } from 'echarts/charts'
+import { LineChart, LinesChart, MapChart, ScatterChart } from 'echarts/charts'
 import {
   GeoComponent,
   GraphicComponent,
@@ -13,6 +13,8 @@ import { CanvasRenderer } from 'echarts/renderers'
 echarts.use([
   MapChart,
   LineChart,
+  LinesChart,
+  ScatterChart,
   GeoComponent,
   GraphicComponent,
   GridComponent,

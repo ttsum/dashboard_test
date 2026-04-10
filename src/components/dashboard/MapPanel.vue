@@ -55,6 +55,7 @@ import { useMapChart } from '../../composables/useMapChart'
 
 const props = defineProps({
   geoJson: { type: Object, default: null },
+  cityGeoJson: { type: Object, default: null },
   isGeoJsonLoading: { type: Boolean, required: true },
   geoJsonError: { type: String, default: '' },
   selectedMeasure: { type: Object, required: true },
@@ -62,23 +63,25 @@ const props = defineProps({
   selectedMapTimeframe: { type: String, required: true },
   mapLegendItems: { type: Array, required: true },
   mapSeriesData: { type: Array, required: true },
-  selectedProvinceNames: { type: Array, required: true },
-  provinceNames: { type: Array, required: true },
+  selectedCountyNames: { type: Array, required: true },
+  countyNames: { type: Array, required: true },
   sourceText: { type: String, required: true }
 })
 
-const emit = defineEmits(['toggleProvince'])
+const emit = defineEmits(['toggleCounty'])
 const mapChartRef = ref(null)
 
 useMapChart({
   chartRef: mapChartRef,
   geoJson: toRef(props, 'geoJson'),
+  cityGeoJson: toRef(props, 'cityGeoJson'),
   mapLegendItems: toRef(props, 'mapLegendItems'),
   mapSeriesData: toRef(props, 'mapSeriesData'),
   selectedMeasure: toRef(props, 'selectedMeasure'),
-  selectedProvinceNames: toRef(props, 'selectedProvinceNames'),
-  provinceNames: toRef(props, 'provinceNames'),
-  onToggleProvince: (name) => emit('toggleProvince', name)
+  selectedMapTimeframe: toRef(props, 'selectedMapTimeframe'),
+  selectedCountyNames: toRef(props, 'selectedCountyNames'),
+  countyNames: toRef(props, 'countyNames'),
+  onToggleCounty: (name) => emit('toggleCounty', name)
 })
 </script>
 
@@ -140,7 +143,7 @@ useMapChart({
   left: 8px;
   bottom: 8px;
   z-index: 10;
-  min-width: 110px;
+  min-width: 130px;
   padding: 6px 8px;
   background-color: rgba(255, 255, 255, 0.92);
   border-radius: 4px;
@@ -150,7 +153,7 @@ useMapChart({
 .legend-title {
   margin-bottom: 4px;
   padding-bottom: 3px;
-  font-size: 10px;
+  font-size: 14px;
   font-weight: 600;
   color: #1f2937;
   border-bottom: 1px solid #e5e7eb;
@@ -181,7 +184,7 @@ useMapChart({
 }
 
 .legend-label {
-  font-size: 8px;
+  font-size: 12px;
   color: #374151;
   white-space: nowrap;
 }

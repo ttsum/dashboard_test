@@ -89,11 +89,7 @@ export function useTrendChart({
   }
 
   const initTrendChart = () => {
-    if (!chartRef.value) {
-      return
-    }
-
-    if (trendChart) {
+    if (!chartRef.value || trendChart) {
       return
     }
 

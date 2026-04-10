@@ -3,8 +3,6 @@
     <DashboardHeader />
 
     <main class="dashboard-main">
-      <TaskPanel :tasks="TASK_ITEMS" />
-
       <FilterPanel
         :map-measures="mapMeasures"
         :selected-map-measure="selectedMapMeasure"
@@ -24,13 +22,14 @@
         @update:start-year="startYear = $event"
         @update:end-year="endYear = $event"
         @update:year-range="yearRange = $event"
-        @clear-selected-provinces="clearSelectedProvinces"
+        @clear-selected-counties="clearSelectedCounties"
       />
 
       <section class="visualization-area">
         <div class="viz-row">
           <MapPanel
             :geo-json="geoJson"
+            :city-geo-json="cityGeoJson"
             :is-geo-json-loading="isGeoJsonLoading"
             :geo-json-error="geoJsonError"
             :selected-measure="selectedMeasure"
@@ -38,10 +37,10 @@
             :selected-map-timeframe="selectedMapTimeframe"
             :map-legend-items="mapLegendItems"
             :map-series-data="mapSeriesData"
-            :selected-province-names="selectedChartMeasures"
-            :province-names="chartMeasures"
+            :selected-county-names="selectedChartMeasures"
+            :county-names="chartMeasures"
             :source-text="MAP_SOURCE_TEXT"
-            @toggle-province="toggleProvinceSelection"
+            @toggle-county="toggleCountySelection"
           />
 
           <TrendPanel
@@ -62,13 +61,12 @@
 import DashboardHeader from './components/dashboard/DashboardHeader.vue'
 import FilterPanel from './components/dashboard/FilterPanel.vue'
 import MapPanel from './components/dashboard/MapPanel.vue'
-import TaskPanel from './components/dashboard/TaskPanel.vue'
 import TrendPanel from './components/dashboard/TrendPanel.vue'
-import { useChinaGeoJson } from './composables/useChinaGeoJson'
 import { useDashboardState } from './composables/useDashboardState'
-import { MAP_SOURCE_TEXT, TASK_ITEMS } from './constants/dashboard'
+import { useHunanGeoJson } from './composables/useHunanGeoJson'
+import { MAP_SOURCE_TEXT } from './constants/dashboard'
 
-const { geoJson, isGeoJsonLoading, geoJsonError } = useChinaGeoJson()
+const { geoJson, cityGeoJson, isGeoJsonLoading, geoJsonError } = useHunanGeoJson()
 
 const {
   mapMeasures,
@@ -77,8 +75,8 @@ const {
   selectedMapTimeframe,
   chartMeasures,
   selectedChartMeasures,
-  clearSelectedProvinces,
-  toggleProvinceSelection,
+  clearSelectedCounties,
+  toggleCountySelection,
   minYear,
   maxYear,
   yearRange,
@@ -95,6 +93,7 @@ const {
 
 <style scoped>
 .dashboard {
+  height: 100%;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -108,6 +107,7 @@ const {
   gap: 8px;
   padding: 8px;
   background-color: #e5e7eb;
+  overflow: hidden;
 }
 
 .visualization-area {

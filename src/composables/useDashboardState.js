@@ -1,41 +1,25 @@
 import { computed, ref } from 'vue'
 import {
   COLOR_SCHEMES,
+  COUNTIES,
   DEFAULT_MEASURE_LABEL,
-  DEFAULT_SELECTED_PROVINCES,
+  DEFAULT_SELECTED_COUNTIES,
   MEASURE_CONFIG,
-  PROVINCES,
   SERIES_COLORS,
   YEAR_OPTIONS
 } from '../constants/dashboard'
 import { formatNumber } from '../utils/format'
 
-export function useDashboardState(geoJson) {
-  const getDisplayLabel = (item) => {
-    if (item.key !== 'income') {
-      return item.label
-    }
-
-    if (item.label.includes('人均')) {
-      return item.label
-    }
-
-    if (item.label.includes('收入')) {
-      return item.label.replace('收入', '人均收入')
-    }
-
-    return `人均收入 (${item.unit})`
-  }
-
+export function useDashboardState(_geoJson) {
   const measureItems = Object.values(MEASURE_CONFIG).map((item) => ({
     ...item,
-    displayLabel: getDisplayLabel(item)
+    displayLabel: item.displayLabel || `${item.label} (${item.unit})`
   }))
 
   const measureByLabel = new Map(
     measureItems.map((item) => [item.displayLabel, item])
   )
-  const provinceByName = new Map(PROVINCES.map((province) => [province.name, province]))
+  const countyByName = new Map(COUNTIES.map((county) => [county.name, county]))
   const seriesColorByName = new Map()
 
   const mapMeasures = measureItems.map((item) => item.displayLabel)
@@ -46,15 +30,15 @@ export function useDashboardState(geoJson) {
   const mapTimeframes = [...YEAR_OPTIONS].reverse().map((year) => String(year))
   const selectedMapTimeframe = ref(String(maxYear))
 
-  const chartMeasures = computed(() => PROVINCES.map((province) => province.name))
-  const selectedChartMeasures = ref([...DEFAULT_SELECTED_PROVINCES])
+  const chartMeasures = computed(() => COUNTIES.map((county) => county.name))
+  const selectedChartMeasures = ref([...DEFAULT_SELECTED_COUNTIES])
 
-  const clearSelectedProvinces = () => {
+  const clearSelectedCounties = () => {
     selectedChartMeasures.value = []
   }
 
-  const toggleProvinceSelection = (name) => {
-    if (!provinceByName.has(name)) {
+  const toggleCountySelection = (name) => {
+    if (!countyByName.has(name)) {
       return
     }
 
@@ -91,21 +75,14 @@ export function useDashboardState(geoJson) {
   })
 
   const selectedMeasure = computed(() => (
-    measureByLabel.get(selectedMapMeasure.value) || MEASURE_CONFIG.gdp
+    measureByLabel.get(selectedMapMeasure.value) || measureItems[0]
   ))
   const selectedYear = computed(() => Number(selectedMapTimeframe.value))
   const trendYears = computed(() => YEAR_OPTIONS.filter((year) => (
     year >= startYear.value && year <= endYear.value
   )))
-  const mapColors = computed(() => COLOR_SCHEMES[selectedMeasure.value.key] || COLOR_SCHEMES.gdp)
-
-  const geoRegionNames = computed(() => (
-    (geoJson.value?.features || [])
-      .map((feature) => feature?.properties?.name)
-      .filter(Boolean)
-  ))
-  const nonStatRegionNames = computed(() => (
-    geoRegionNames.value.filter((name) => !provinceByName.has(name))
+  const mapColors = computed(() => (
+    COLOR_SCHEMES[selectedMeasure.value.key] || COLOR_SCHEMES.population
   ))
 
   const getSeriesColor = (name) => {
@@ -116,24 +93,15 @@ export function useDashboardState(geoJson) {
     return seriesColorByName.get(name)
   }
 
-  const mapSeriesData = computed(() => {
-    const provinceData = PROVINCES.map((province) => {
-      const rawValue = province.metrics[selectedMeasure.value.key]?.[selectedYear.value]
+  const mapSeriesData = computed(() => (
+    COUNTIES.map((county) => {
+      const rawValue = county.metrics[selectedMeasure.value.key]?.[selectedYear.value]
       return {
-        name: province.name,
-        value: Number.isFinite(rawValue) ? rawValue : null,
-        adcode: province.adcode
+        name: county.name,
+        value: Number.isFinite(rawValue) ? rawValue : null
       }
     })
-
-    const noDataRegions = nonStatRegionNames.value.map((name) => ({
-      name,
-      value: null,
-      itemStyle: { areaColor: '#D1D5DB' }
-    }))
-
-    return [...provinceData, ...noDataRegions]
-  })
+  ))
 
   const buildLegendItems = (values, unit, colors) => {
     if (!values.length) {
@@ -150,16 +118,18 @@ export function useDashboardState(geoJson) {
     const step = (max - min) / colors.length
 
     return colors.map((color, index) => {
-      const lower = Math.round(min + step * index)
-      const upper = Math.round(min + step * (index + 1))
+      const exactLower = min + step * index
+      const exactUpper = min + step * (index + 1)
+      const labelLower = Math.round(index === 0 ? min : exactLower)
+      const labelUpper = Math.round(index === colors.length - 1 ? max : exactUpper)
       const rangeLabel = index === colors.length - 1
-        ? `${formatNumber(lower)} - ${formatNumber(max)} ${unit}`
-        : `${formatNumber(index === 0 ? min : lower)} - ${formatNumber(upper)} ${unit}`
+        ? `${formatNumber(labelLower)} - ${formatNumber(Math.round(max))} ${unit}`
+        : `${formatNumber(labelLower)} - ${formatNumber(labelUpper)} ${unit}`
 
       return {
         color,
-        min: index === 0 ? min : lower,
-        max: index === colors.length - 1 ? max : upper,
+        min: index === 0 ? min : exactLower,
+        max: index === colors.length - 1 ? max : exactUpper,
         label: rangeLabel
       }
     })
@@ -177,13 +147,13 @@ export function useDashboardState(geoJson) {
 
   const trendSeriesData = computed(() => (
     selectedChartMeasures.value
-      .map((name) => provinceByName.get(name))
+      .map((name) => countyByName.get(name))
       .filter(Boolean)
-      .map((province) => ({
-        name: province.name,
-        color: getSeriesColor(province.name),
+      .map((county) => ({
+        name: county.name,
+        color: getSeriesColor(county.name),
         data: trendYears.value.map((year) => {
-          const value = province.metrics[selectedMeasure.value.key]?.[year]
+          const value = county.metrics[selectedMeasure.value.key]?.[year]
           return Number.isFinite(value) ? value : null
         })
       }))
@@ -198,8 +168,8 @@ export function useDashboardState(geoJson) {
     selectedMapTimeframe,
     chartMeasures,
     selectedChartMeasures,
-    clearSelectedProvinces,
-    toggleProvinceSelection,
+    clearSelectedCounties,
+    toggleCountySelection,
     yearRange,
     yearMarks,
     startYear,

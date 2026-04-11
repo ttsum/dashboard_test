@@ -97,7 +97,7 @@ useMapChart({
   flex-shrink: 0;
   margin-bottom: 6px;
   padding-bottom: 4px;
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 600;
   color: #1f2937;
   border-bottom: 2px solid #002d56;
@@ -132,7 +132,7 @@ useMapChart({
   align-items: center;
   justify-content: center;
   padding: 24px;
-  font-size: 13px;
+  font-size: 15px;
   color: #6b7280;
   text-align: center;
   background: rgba(249, 250, 251, 0.85);
@@ -153,7 +153,7 @@ useMapChart({
 .legend-title {
   margin-bottom: 4px;
   padding-bottom: 3px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #1f2937;
   border-bottom: 1px solid #e5e7eb;
@@ -184,7 +184,7 @@ useMapChart({
 }
 
 .legend-label {
-  font-size: 12px;
+  font-size: 13px;
   color: #374151;
   white-space: nowrap;
 }
@@ -193,7 +193,7 @@ useMapChart({
   flex-shrink: 0;
   margin-top: 6px;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: 12px;
   font-style: italic;
   line-height: 1.25;
   color: #6b7280;

@@ -476,6 +476,9 @@ export function useMapChart({
         triggerOn: 'none',
         alwaysShowContent: false,
         confine: true,
+        textStyle: {
+          fontSize: 14
+        },
         formatter: (params) => {
           // 甯傜骇鏍囩涓嶆樉绀簍ooltip
           if (params?.seriesName === 'city-label-overlay') {
@@ -588,7 +591,7 @@ export function useMapChart({
           label: {
             show: true,
             color: '#1f2937',
-            fontSize: 13,
+            fontSize: 15,
             fontWeight: 600,
             fontStyle: 'italic',
             padding: [3, 6],

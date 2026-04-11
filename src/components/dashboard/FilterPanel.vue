@@ -146,7 +146,7 @@ const emit = defineEmits([
 <style scoped>
 .filter-panel {
   --dashboard-font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-  --option-font-size: 14px;
+  --option-font-size: 15px;
   --option-font-weight: 500;
   --option-line-height: 1.3;
   --option-color: #4b5563;
@@ -171,7 +171,7 @@ const emit = defineEmits([
 .filter-header {
   margin-bottom: 6px;
   padding-bottom: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
   border-bottom: 1px solid #e5e7eb;
@@ -186,7 +186,7 @@ const emit = defineEmits([
 
 .clear-btn {
   padding: 0;
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -211,7 +211,7 @@ const emit = defineEmits([
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 3px 6px;
-  max-height: 120px;
+  max-height: 150px;
   padding-right: 4px;
   overflow-y: auto;
   align-content: start;
@@ -254,15 +254,15 @@ const emit = defineEmits([
 }
 
 .year-input :deep(.el-input__inner) {
-  height: 24px;
+  height: 28px;
   padding: 0 4px;
-  font-size: 11px;
-  line-height: 24px;
+  font-size: 13px;
+  line-height: 28px;
   text-align: center;
 }
 
 .year-separator {
-  font-size: 11px;
+  font-size: 13px;
   color: #6b7280;
 }
 
@@ -271,7 +271,7 @@ const emit = defineEmits([
 }
 
 .slider-container :deep(.el-slider__marks-text) {
-  font-size: 9px;
+  font-size: 11px;
   color: #9ca3af;
 }
 

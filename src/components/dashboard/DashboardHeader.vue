@@ -108,7 +108,7 @@ const currentDate = computed(() => {
 .task-label {
   flex-shrink: 0;
   padding: 5px 12px;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   color: #78350f;
   letter-spacing: 0.5px;
@@ -120,7 +120,7 @@ const currentDate = computed(() => {
 .task-text {
   min-width: 0;
   overflow: hidden;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 700;
   color: #fffdf5;
   letter-spacing: 0.3px;
@@ -130,19 +130,19 @@ const currentDate = computed(() => {
 }
 
 .org-name {
-  font-size: 12px;
+  font-size: 14px;
   color: rgba(255, 255, 255, 0.8);
   letter-spacing: 0.5px;
 }
 
 .main-title {
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: 1px;
 }
 
 .date-text {
-  font-size: 14px;
+  font-size: 16px;
   color: rgba(255, 255, 255, 0.9);
 }
 
@@ -164,11 +164,11 @@ const currentDate = computed(() => {
 
   .task-label {
     padding: 3px 8px;
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .task-text {
-    font-size: 12px;
+    font-size: 14px;
   }
 }
 </style>

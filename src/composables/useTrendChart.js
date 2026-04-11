@@ -25,6 +25,9 @@ export function useTrendChart({
       tooltip: {
         trigger: 'axis',
         axisPointer: { type: 'cross' },
+        textStyle: {
+          fontSize: 13
+        },
         valueFormatter: (value) => (
           value == null ? '暂无统计数据' : `${formatNumber(value)} ${selectedMeasure.value.unit}`
         )
@@ -41,7 +44,7 @@ export function useTrendChart({
         data: trendYears.value.map((year) => String(year)),
         axisLabel: {
           rotate: 45,
-          fontSize: 10
+          fontSize: 12
         }
       },
       yAxis: {
@@ -50,7 +53,7 @@ export function useTrendChart({
         nameLocation: 'end',
         nameGap: 18,
         nameTextStyle: {
-          fontSize: 11
+          fontSize: 13
         }
       },
       legend: {
@@ -62,7 +65,7 @@ export function useTrendChart({
         itemWidth: 10,
         itemHeight: 10,
         textStyle: {
-          fontSize: 11
+          fontSize: 13
         }
       },
       series: trendSeriesData.value.map((item) => ({
@@ -82,7 +85,7 @@ export function useTrendChart({
         style: {
           text: EMPTY_TREND_TEXT,
           fill: '#9CA3AF',
-          fontSize: 13
+          fontSize: 15
         }
       }]
     }, true)

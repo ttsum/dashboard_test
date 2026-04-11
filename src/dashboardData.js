@@ -1,5 +1,5 @@
-import hunanCountyMetrics from './data/hunanCountyMetrics.json'
+import anhuiCountyMetrics from './data/anhuiCountyMetrics.json'
 
-export const YEAR_OPTIONS = hunanCountyMetrics.years
-export const MEASURE_CONFIG = hunanCountyMetrics.measures
-export const COUNTIES = hunanCountyMetrics.counties
+export const YEAR_OPTIONS = anhuiCountyMetrics.years
+export const MEASURE_CONFIG = anhuiCountyMetrics.measures
+export const COUNTIES = anhuiCountyMetrics.counties

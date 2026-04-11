@@ -3,18 +3,22 @@ const path = require('path')
 const XLSX = require('xlsx')
 
 const EXCEL_PATH = path.resolve(__dirname, 'data/中国县域统计数据.xlsx')
-const RAW_COUNTY_GEO_PATH = path.resolve(__dirname, 'src/assets/geo/hunan-counties.raw.geo.json')
-const RAW_PROVINCE_GEO_PATH = path.resolve(__dirname, 'src/assets/geo/hunan-province.raw.geo.json')
-const OUTPUT_METRICS_PATH = path.resolve(__dirname, 'src/data/hunanCountyMetrics.json')
-const OUTPUT_MAP_PATH = path.resolve(__dirname, 'src/assets/geo/hunan-counties.json')
+const RAW_COUNTY_GEO_PATH = path.resolve(__dirname, 'src/assets/geo/anhui-counties.raw.geo.json')
+const RAW_PROVINCE_GEO_PATH = path.resolve(__dirname, 'src/assets/geo/anhui-province.raw.geo.json')
+const OUTPUT_METRICS_PATH = path.resolve(__dirname, 'src/data/anhuiCountyMetrics.json')
+const OUTPUT_MAP_PATH = path.resolve(__dirname, 'src/assets/geo/anhui-counties.json')
 const DATA_SHEET_NAME = 'ARIMA'
 
+const PROVINCE_NAME = '安徽省'
+const PROVINCE_ADCODE = '340000'
 const YEAR_START = 2015
 const YEAR_END = 2023
 const YEARS = Array.from({ length: YEAR_END - YEAR_START + 1 }, (_, i) => YEAR_START + i)
 
 const NAME_ALIASES = {
-  祁阳县: '祁阳市'
+  湾沚区: '芜湖县',
+  繁昌区: '繁昌县',
+  铜官区: '铜官山区'
 }
 
 const METRIC_DEFINITIONS = [
@@ -80,14 +84,14 @@ const buildCountyMapFeatures = (countyGeoJson) => (
 const buildProvinceOutlineFeature = (provinceGeoJson) => {
   const provinceFeature = provinceGeoJson.features?.[0]
   if (!provinceFeature) {
-    throw new Error('Missing province boundary feature in hunan-province.raw.geo.json')
+    throw new Error('Missing province boundary feature in anhui-province.raw.geo.json')
   }
 
   return {
     type: 'Feature',
     properties: {
-      name: '湖南省边界',
-      adcode: '430000',
+      name: '安徽省边界',
+      adcode: PROVINCE_ADCODE,
       level: 'province-outline'
     },
     geometry: normalizeGeometry(provinceFeature.geometry)
@@ -106,7 +110,7 @@ const buildMeasureMeta = () => Object.fromEntries(
   ])
 )
 
-const createHunanCountyDataset = () => {
+const createAnhuiCountyDataset = () => {
   const countyGeoJson = loadJson(RAW_COUNTY_GEO_PATH)
   const provinceGeoJson = loadJson(RAW_PROVINCE_GEO_PATH)
   const countyFeatures = buildCountyMapFeatures(countyGeoJson)
@@ -120,7 +124,7 @@ const createHunanCountyDataset = () => {
 
   const rows = XLSX.utils.sheet_to_json(dataSheet, { defval: null })
   const filteredRows = rows.filter((row) => (
-    row['省份'] === '湖南省'
+    row['省份'] === PROVINCE_NAME
     && Number(row['年份']) >= YEAR_START
     && Number(row['年份']) <= YEAR_END
     && row['区县']
@@ -133,15 +137,19 @@ const createHunanCountyDataset = () => {
     rowByCountyAndYear.set(`${normalizedName}::${year}`, row)
   })
 
+  const missingCountyNames = new Set()
   const counties = countyFeatures.map((feature) => {
-    const countyName = normalizeName(feature.properties.name)
+    const sourceCountyName = normalizeName(feature.properties.name)
     const metrics = {}
 
     METRIC_DEFINITIONS.forEach((metric) => {
       metrics[metric.key] = Object.fromEntries(
         YEARS.map((year) => {
-          const row = rowByCountyAndYear.get(`${countyName}::${year}`)
+          const row = rowByCountyAndYear.get(`${sourceCountyName}::${year}`)
           const value = parseNumber(row?.[metric.source])
+          if (!row) {
+            missingCountyNames.add(feature.properties.name)
+          }
           return [year, value]
         })
       )
@@ -150,12 +158,14 @@ const createHunanCountyDataset = () => {
     return {
       adcode: feature.properties.adcode,
       name: feature.properties.name,
+      sourceName: sourceCountyName,
       metrics
     }
   })
 
   const metricsOutput = {
     years: YEARS,
+    province: PROVINCE_NAME,
     aliases: NAME_ALIASES,
     measures: buildMeasureMeta(),
     counties
@@ -172,6 +182,9 @@ const createHunanCountyDataset = () => {
   console.log(`Generated metrics: ${OUTPUT_METRICS_PATH}`)
   console.log(`Generated map: ${OUTPUT_MAP_PATH}`)
   console.log(`Counties: ${counties.length}, Years: ${YEARS[0]}-${YEARS[YEARS.length - 1]}`)
+  if (missingCountyNames.size) {
+    console.log(`Counties without source rows: ${Array.from(missingCountyNames).join(', ')}`)
+  }
 }
 
-createHunanCountyDataset()
+createAnhuiCountyDataset()

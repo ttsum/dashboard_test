@@ -343,6 +343,7 @@ const buildTooltipMapData = (coloredMapData) => (
     name: item.name,
     value: item.value,
     tierLabel: item.tierLabel,
+    color: item.color,
     itemStyle: {
       areaColor: 'rgba(0,0,0,0)',
       borderColor: 'rgba(0,0,0,0)',
@@ -370,6 +371,24 @@ export function useMapChart({
   const getCountyDataIndex = (name) => (
     mapSeriesData.value.findIndex((item) => item.name === name)
   )
+
+  const buildCountyTooltip = (params) => {
+    const rawValue = params?.data?.value
+    const measureLine = Number.isFinite(Number(rawValue))
+      ? `${selectedMapTimeframe.value}年${selectedMeasure.value.label}: ${formatNumber(rawValue)} ${selectedMeasure.value.unit}`
+      : `${selectedMapTimeframe.value}年${selectedMeasure.value.label}: 暂无统计数据`
+    const tierLine = params?.data?.tierLabel
+      ? `分层: ${params.data.tierLabel}`
+      : '分层: 暂无数据'
+
+    return [
+      `<strong>${params.name}</strong>`,
+      '地点介绍: 江西省区县级行政区',
+      measureLine,
+      tierLine,
+      '点击地图可加入或移出趋势对比'
+    ].join('<br>')
+  }
 
   const syncMapSelection = () => {
     if (!mapChart || !geoJson.value) {
@@ -401,12 +420,17 @@ export function useMapChart({
     })
   }
 
+  const setMapCursor = (cursor = 'default') => {
+    mapChart?.getZr()?.setCursorStyle(cursor)
+  }
+
   const hideCountyTip = () => {
     if (!mapChart) {
       return
     }
 
     hoveredCountyName = ''
+    setMapCursor()
     mapChart.dispatchAction({
       type: 'hideTip'
     })
@@ -491,6 +515,7 @@ export function useMapChart({
     }
 
     hoveredCountyName = countyName
+    setMapCursor('pointer')
     showCountyTip(countyName)
   }
 
@@ -570,28 +595,20 @@ export function useMapChart({
         triggerOn: 'none',
         alwaysShowContent: false,
         confine: true,
+        appendToBody: true,
         textStyle: {
           fontSize: 16
         },
         formatter: (params) => {
-          // 甯傜骇鏍囩涓嶆樉绀簍ooltip
-          if (params?.seriesName === 'city-label-overlay') {
+          if (['city-label-overlay', 'county-label-overlay'].includes(params?.seriesName)) {
             return null
           }
 
-          const rawValue = params?.data?.value
-          const measureLine = Number.isFinite(Number(rawValue))
-            ? `${selectedMapTimeframe.value}年${selectedMeasure.value.label}: ${formatNumber(rawValue)} ${selectedMeasure.value.unit}`
-            : `${selectedMapTimeframe.value}年${selectedMeasure.value.label}: 暂无统计数据`
           if (params?.name && countyNames.value.includes(params.name)) {
-            return `${params.name}<br>${measureLine}`
+            return buildCountyTooltip(params)
           }
 
-          if (!Number.isFinite(Number(rawValue))) {
-            return `${params.name}<br>暂无统计数据`
-          }
-
-          return `${params.name}<br>${measureLine}`
+          return params?.name ? `${params.name}<br>暂无统计数据` : ''
         }
       },
       geo: {

@@ -31,7 +31,6 @@ const RADIAN_TO_DEGREE = 180 / Math.PI
 const MERCATOR_MAX_LATITUDE = 85.0511287798
 const MAP_DOM_EVENT_OPTIONS = { capture: true, passive: true }
 const ROAM_IDLE_DELAY = 90
-const COUNTY_LABEL_FULL_ZOOM = 4.2
 const DENSE_COUNTY_LABEL_NAMES = new Set([
   '东湖区',
   '西湖区',
@@ -893,7 +892,7 @@ export function useMapChart({
       return 'hidden'
     }
 
-    return zoom >= COUNTY_LABEL_FULL_ZOOM ? 'full' : 'reduced'
+    return 'visible'
   }
 
   const buildVisibleCountyLabelData = (zoom = getCurrentGeoZoom()) => {
@@ -906,10 +905,6 @@ export function useMapChart({
 
     if (visibilityState === 'hidden') {
       return []
-    }
-
-    if (visibilityState === 'full') {
-      return countyLabelData
     }
 
     return countyLabelData.filter((item) => {

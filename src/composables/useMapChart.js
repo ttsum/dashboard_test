@@ -41,12 +41,6 @@ const DENSE_COUNTY_LABEL_NAMES = new Set([
   '红谷滩区',
   '南昌县'
 ])
-const DENSE_COUNTY_LABEL_KEEP_NAMES = new Set([
-  '东湖区',
-  '西湖区',
-  '青山湖区',
-  '南昌县'
-])
 
 const clampMercatorLatitude = (latitude) => (
   Math.max(-MERCATOR_MAX_LATITUDE, Math.min(MERCATOR_MAX_LATITUDE, Number(latitude)))
@@ -906,6 +900,9 @@ export function useMapChart({
     const countyLabelData = buildLabelData(geoJson.value, 'county')
     const visibilityState = getCountyLabelVisibilityState(zoom)
     const selectedNames = new Set(selectedCountyNames.value)
+    const visibleDenseSelectedName = [...selectedCountyNames.value]
+      .reverse()
+      .find((name) => DENSE_COUNTY_LABEL_NAMES.has(name))
 
     if (visibilityState === 'hidden') {
       return []
@@ -918,8 +915,7 @@ export function useMapChart({
     return countyLabelData.filter((item) => {
       const name = item?.name
       return !DENSE_COUNTY_LABEL_NAMES.has(name)
-        || DENSE_COUNTY_LABEL_KEEP_NAMES.has(name)
-        || selectedNames.has(name)
+        || (selectedNames.has(name) && name === visibleDenseSelectedName)
     })
   }
 

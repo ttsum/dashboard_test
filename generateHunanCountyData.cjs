@@ -26,7 +26,7 @@ const METRIC_DEFINITIONS = [
   { key: 'oilYield', source: '油料产量_吨', label: '油料产量', unit: '吨' },
   { key: 'avgWage', source: '城镇单位在岗职工平均工资_元', label: '平均工资', unit: '元' },
   { key: 'industrialEnterpriseCount', source: '规模以上工业企业数_个', label: '工业企业数量', unit: '个' },
-  { key: 'primaryTeacherCount', source: '普通小学专任教师数_人', label: '小学教师人数', unit: '人' }
+  { key: 'primaryTeacherCount', source: '普通小学专任教师数_人\n—来自【马 克 数 据 网】', label: '小学教师人数', unit: '人' }
 ]
 
 const normalizeName = (name) => {

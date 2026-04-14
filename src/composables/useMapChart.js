@@ -20,7 +20,9 @@ const getGeometryRings = (geometry) => {
 }
 
 const EDGE_PRECISION = 6
+const countyBoundaryLineCache = new WeakMap()
 const cityBoundaryLineCache = new WeakMap()
+const labelDataCache = new WeakMap()
 const MAP_FILL_OPACITY = 0.9
 const INITIAL_MAP_ZOOM = 1.1
 const COUNTY_LABEL_MIN_ZOOM = 2.35
@@ -207,12 +209,24 @@ const buildCityBoundaryLines = (countyGeoJson) => {
   return mergedLines
 }
 
-const buildCountyBoundaryLines = (countyGeoJson) => (
-  (countyGeoJson?.features || [])
+const buildCountyBoundaryLines = (countyGeoJson) => {
+  if (!countyGeoJson) {
+    return []
+  }
+
+  const cachedLines = countyBoundaryLineCache.get(countyGeoJson)
+  if (cachedLines) {
+    return cachedLines
+  }
+
+  const lines = (countyGeoJson?.features || [])
     .flatMap((feature) => getGeometryRings(feature.geometry))
     .filter((ring) => Array.isArray(ring) && ring.length > 1)
     .map((ring) => ({ coords: ring }))
-)
+
+  countyBoundaryLineCache.set(countyGeoJson, lines)
+  return lines
+}
 
 const buildSelectedCountyBoundaryLines = (countyGeoJson, selectedCountyNames = []) => {
   const selectedNames = new Set(selectedCountyNames)
@@ -299,8 +313,17 @@ const isPointInPolygonGeometry = (point, geometry) => {
   return false
 }
 
-const buildLabelData = (labelGeoJson) => (
-  (labelGeoJson?.features || [])
+const buildLabelData = (labelGeoJson) => {
+  if (!labelGeoJson) {
+    return []
+  }
+
+  const cachedLabelData = labelDataCache.get(labelGeoJson)
+  if (cachedLabelData) {
+    return cachedLabelData
+  }
+
+  const labelData = (labelGeoJson?.features || [])
     .map((feature) => {
       const name = feature?.properties?.name
       const cp = feature?.properties?.centroid
@@ -319,7 +342,10 @@ const buildLabelData = (labelGeoJson) => (
       }
     })
     .filter(Boolean)
-)
+
+  labelDataCache.set(labelGeoJson, labelData)
+  return labelData
+}
 
 const getLegendItemForValue = (value, legendItems) => (
   legendItems.find(
@@ -1149,7 +1175,6 @@ export function useMapChart({
       chartRef.value.addEventListener('mouseleave', handleCanvasMouseOut, MAP_DOM_EVENT_OPTIONS)
       requestAnimationFrame(() => {
         mapChart?.resize()
-        updateMapChart()
       })
     }
 

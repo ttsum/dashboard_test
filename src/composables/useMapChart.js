@@ -32,13 +32,13 @@ const MERCATOR_MAX_LATITUDE = 85.0511287798
 const MAP_DOM_EVENT_OPTIONS = { capture: true, passive: true }
 const ROAM_IDLE_DELAY = 90
 const DENSE_COUNTY_LABEL_NAMES = new Set([
-  '东湖区',
-  '西湖区',
-  '青云谱区',
-  '青山湖区',
-  '新建区',
-  '红谷滩区',
-  '南昌县'
+  '芙蓉区',
+  '天心区',
+  '岳麓区',
+  '开福区',
+  '雨花区',
+  '望城区',
+  '长沙县'
 ])
 
 const clampMercatorLatitude = (latitude) => (
@@ -1183,7 +1183,7 @@ export function useMapChart({
           data: selectedCountyBoundaryLines
         },
         {
-          name: 'jiangxi-province-outline',
+          name: 'province-outline',
           type: 'lines',
           coordinateSystem: 'geo',
           polyline: true,

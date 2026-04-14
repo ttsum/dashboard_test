@@ -8,7 +8,7 @@
       </div>
 
       <div class="header-title">
-        <span class="org-name">江西省县域统计监测</span>
+        <span class="org-name">湖南省县域统计监测</span>
         <span class="main-title">区县经济与民生指标看板</span>
       </div>
     </div>
@@ -17,13 +17,6 @@
       <div class="task-panel">
         <span class="task-label">任务内容</span>
         <span class="task-text">{{ currentTask }}</span>
-        <button
-          class="next-task-btn"
-          type="button"
-          @click="showNextTask"
-        >
-          下一个
-        </button>
       </div>
     </div>
 
@@ -34,21 +27,45 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { ElIcon } from 'element-plus'
 import { TrendCharts } from '@element-plus/icons-vue'
 
 const TASKS = [
-  '找到2020年南昌市东湖区的GDP数量',
-  '比较宜春市宜丰县和上饶市弋阳县哪个GDP高'
+  {
+    id: '1',
+    content: '找到2020年长沙市芙蓉区的GDP数量'
+  },
+  {
+    id: '2',
+    content: '比较长沙市芙蓉区和岳阳市岳阳楼区哪个GDP高'
+  }
 ]
 
-const currentTaskIndex = ref(0)
-const currentTask = computed(() => TASKS[currentTaskIndex.value])
+const DEFAULT_TASK_ID = TASKS[0].id
+const taskById = new Map(TASKS.map((task) => [task.id, task]))
 
-const showNextTask = () => {
-  currentTaskIndex.value = (currentTaskIndex.value + 1) % TASKS.length
+const readTaskIdFromUrl = () => {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('taskId') || params.get('task') || DEFAULT_TASK_ID
 }
+
+const currentTaskId = ref(readTaskIdFromUrl())
+const currentTask = computed(() => (
+  taskById.get(currentTaskId.value)?.content || taskById.get(DEFAULT_TASK_ID).content
+))
+
+const syncTaskIdFromUrl = () => {
+  currentTaskId.value = readTaskIdFromUrl()
+}
+
+onMounted(() => {
+  window.addEventListener('popstate', syncTaskIdFromUrl)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('popstate', syncTaskIdFromUrl)
+})
 
 const currentDate = computed(() => {
   const now = new Date()
@@ -149,28 +166,6 @@ const currentDate = computed(() => {
   white-space: nowrap;
 }
 
-.next-task-btn {
-  flex-shrink: 0;
-  min-height: 34px;
-  padding: 6px 13px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #002d56;
-  cursor: pointer;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.18);
-}
-
-.next-task-btn:hover {
-  background: #f8fafc;
-}
-
-.next-task-btn:active {
-  transform: translateY(1px);
-}
-
 .org-name {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
@@ -213,10 +208,5 @@ const currentDate = computed(() => {
     font-size: 12px;
   }
 
-  .next-task-btn {
-    min-height: 30px;
-    padding: 4px 9px;
-    font-size: 11px;
-  }
 }
 </style>

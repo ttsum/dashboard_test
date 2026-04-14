@@ -31,15 +31,22 @@ const RADIAN_TO_DEGREE = 180 / Math.PI
 const MERCATOR_MAX_LATITUDE = 85.0511287798
 const MAP_DOM_EVENT_OPTIONS = { capture: true, passive: true }
 const ROAM_IDLE_DELAY = 90
-const DENSE_COUNTY_LABEL_OFFSETS = {
-  东湖区: [0, -34],
-  西湖区: [-48, 18],
-  青云谱区: [42, 28],
-  青山湖区: [-34, -14],
-  新建区: [46, -16],
-  红谷滩区: [-58, 36],
-  南昌县: [62, 30]
-}
+const COUNTY_LABEL_FULL_ZOOM = 4.2
+const DENSE_COUNTY_LABEL_NAMES = new Set([
+  '东湖区',
+  '西湖区',
+  '青云谱区',
+  '青山湖区',
+  '新建区',
+  '红谷滩区',
+  '南昌县'
+])
+const DENSE_COUNTY_LABEL_KEEP_NAMES = new Set([
+  '东湖区',
+  '西湖区',
+  '青山湖区',
+  '南昌县'
+])
 
 const clampMercatorLatitude = (latitude) => (
   Math.max(-MERCATOR_MAX_LATITUDE, Math.min(MERCATOR_MAX_LATITUDE, Number(latitude)))
@@ -348,10 +355,7 @@ const buildLabelData = (labelGeoJson, labelType = 'default') => {
 
       return {
         name,
-        value: [lng, lat, name],
-        label: labelType === 'county' && DENSE_COUNTY_LABEL_OFFSETS[name]
-          ? { offset: DENSE_COUNTY_LABEL_OFFSETS[name] }
-          : undefined
+        value: [lng, lat, name]
       }
     })
     .filter(Boolean)
@@ -442,7 +446,7 @@ export function useMapChart({
   let pendingMouseMoveEvent = null
   let roamIdleTimer = null
   let isMapRoaming = false
-  let areCountyLabelsVisible = null
+  let countyLabelVisibilityState = ''
   let manualTooltipEl = null
   let projectedCountyGeometries = null
   let interactionOverlayEl = null
@@ -890,17 +894,50 @@ export function useMapChart({
     return Number.isFinite(zoom) ? zoom : INITIAL_MAP_ZOOM
   }
 
+  const getCountyLabelVisibilityState = (zoom) => {
+    if (zoom < COUNTY_LABEL_MIN_ZOOM) {
+      return 'hidden'
+    }
+
+    return zoom >= COUNTY_LABEL_FULL_ZOOM ? 'full' : 'reduced'
+  }
+
+  const buildVisibleCountyLabelData = (zoom = getCurrentGeoZoom()) => {
+    const countyLabelData = buildLabelData(geoJson.value, 'county')
+    const visibilityState = getCountyLabelVisibilityState(zoom)
+    const selectedNames = new Set(selectedCountyNames.value)
+
+    if (visibilityState === 'hidden') {
+      return []
+    }
+
+    if (visibilityState === 'full') {
+      return countyLabelData
+    }
+
+    return countyLabelData.filter((item) => {
+      const name = item?.name
+      return !DENSE_COUNTY_LABEL_NAMES.has(name)
+        || DENSE_COUNTY_LABEL_KEEP_NAMES.has(name)
+        || selectedNames.has(name)
+    })
+  }
+
   const applyLabelVisibility = (zoom = getCurrentGeoZoom()) => {
     if (!mapChart) {
       return
     }
 
-    const showCountyLabels = zoom >= COUNTY_LABEL_MIN_ZOOM
-    if (areCountyLabelsVisible === showCountyLabels) {
+    const nextCountyLabelVisibilityState = getCountyLabelVisibilityState(zoom)
+    const showCountyLabels = nextCountyLabelVisibilityState !== 'hidden'
+    const selectedLabelKey = selectedCountyNames.value.join('|')
+    const nextStateKey = `${nextCountyLabelVisibilityState}:${selectedLabelKey}`
+
+    if (countyLabelVisibilityState === nextStateKey) {
       return
     }
 
-    areCountyLabelsVisible = showCountyLabels
+    countyLabelVisibilityState = nextStateKey
 
     mapChart.setOption({
       series: [
@@ -915,7 +952,8 @@ export function useMapChart({
         {
           label: {
             show: showCountyLabels
-          }
+          },
+          data: buildVisibleCountyLabelData(zoom)
         }
       ]
     }, false, true)
@@ -957,7 +995,6 @@ export function useMapChart({
     const cityBoundaryLines = buildCityBoundaryLines(geoJson.value)
     const provinceBoundaryLines = buildCountyBoundaryLines(provinceGeoJson.value)
     const cityLabelData = buildLabelData(cityGeoJson.value, 'city')
-    const countyLabelData = buildLabelData(geoJson.value, 'county')
     const coloredMapData = buildColoredMapData(mapSeriesData.value, mapLegendItems.value)
     const tooltipMapData = buildTooltipMapData(coloredMapData)
     const selectedCountyBoundaryLines = buildSelectedCountyBoundaryLines(
@@ -965,7 +1002,7 @@ export function useMapChart({
       selectedCountyNames.value
     )
 
-    areCountyLabelsVisible = null
+    countyLabelVisibilityState = ''
     mapChart.setOption({
       animation: false,
       animationDuration: 0,
@@ -1082,8 +1119,7 @@ export function useMapChart({
           z: 40,
           symbolSize: 0,
           labelLayout: {
-            hideOverlap: true,
-            moveOverlap: 'shiftY'
+            hideOverlap: true
           },
           label: {
             show: true,
@@ -1115,8 +1151,7 @@ export function useMapChart({
           z: 45,
           symbolSize: 0,
           labelLayout: {
-            hideOverlap: true,
-            moveOverlap: 'shiftY'
+            hideOverlap: true
           },
           label: {
             show: false,
@@ -1136,7 +1171,7 @@ export function useMapChart({
           emphasis: {
             disabled: true
           },
-          data: countyLabelData
+          data: []
         },
         {
           id: 'selected-county-outline',
@@ -1227,7 +1262,14 @@ export function useMapChart({
     { deep: true, immediate: true }
   )
 
-  watch(selectedCountyNames, syncMapSelection, { deep: true })
+  watch(
+    selectedCountyNames,
+    () => {
+      syncMapSelection()
+      applyLabelVisibility()
+    },
+    { deep: true }
+  )
 
   onMounted(() => {
     initMapChart()

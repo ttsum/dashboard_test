@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import {
   COLOR_SCHEMES,
   COUNTIES,
@@ -10,7 +10,7 @@ import {
 } from '../constants/dashboard'
 import { formatNumber } from '../utils/format'
 
-export function useDashboardState(_geoJson) {
+export function useDashboardState(_geoJson, activeTask) {
   const measureItems = Object.values(MEASURE_CONFIG).map((item) => ({
     ...item,
     displayLabel: item.displayLabel || `${item.label} (${item.unit})`
@@ -158,6 +158,36 @@ export function useDashboardState(_geoJson) {
         })
       }))
   ))
+
+  const applyTaskView = (task) => {
+    const view = task?.view
+    if (!view) {
+      return
+    }
+
+    const measure = measureItems.find((item) => item.key === view.measureKey)
+    if (measure) {
+      selectedMapMeasure.value = measure.displayLabel
+    }
+
+    if (Number.isFinite(view.mapYear) && YEAR_OPTIONS.includes(view.mapYear)) {
+      selectedMapTimeframe.value = String(view.mapYear)
+    }
+
+    if (Array.isArray(view.selectedCounties)) {
+      selectedChartMeasures.value = view.selectedCounties.filter((name) => countyByName.has(name))
+    }
+
+    if (Array.isArray(view.yearRange) && view.yearRange.length === 2) {
+      const nextStartYear = Math.max(minYear, Math.min(maxYear, Number(view.yearRange[0])))
+      const nextEndYear = Math.max(nextStartYear, Math.min(maxYear, Number(view.yearRange[1])))
+      yearRange.value = [nextStartYear, nextEndYear]
+    }
+  }
+
+  if (activeTask) {
+    watch(activeTask, applyTaskView, { immediate: true })
+  }
 
   return {
     mapMeasures,

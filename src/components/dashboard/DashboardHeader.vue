@@ -14,9 +14,10 @@
     </div>
 
     <div class="header-center">
-      <div class="task-panel">
+      <div class="task-panel" :title="currentTaskUrl">
         <span class="task-label">任务内容</span>
-        <span class="task-text">{{ currentTask }}</span>
+        <span class="task-text">{{ currentTask.content }}</span>
+        <span class="task-route">任务 {{ currentTaskNumber }}/{{ taskCount }} · 空格切换</span>
       </div>
     </div>
 
@@ -27,44 +28,27 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed } from 'vue'
 import { ElIcon } from 'element-plus'
 import { TrendCharts } from '@element-plus/icons-vue'
 
-const TASKS = [
-  {
-    id: '1',
-    content: '找到2020年长沙市芙蓉区的GDP数量'
+defineProps({
+  currentTask: {
+    type: Object,
+    required: true
   },
-  {
-    id: '2',
-    content: '比较长沙市芙蓉区和岳阳市岳阳楼区哪个GDP高'
+  currentTaskNumber: {
+    type: Number,
+    required: true
+  },
+  taskCount: {
+    type: Number,
+    required: true
+  },
+  currentTaskUrl: {
+    type: String,
+    required: true
   }
-]
-
-const DEFAULT_TASK_ID = TASKS[0].id
-const taskById = new Map(TASKS.map((task) => [task.id, task]))
-
-const readTaskIdFromUrl = () => {
-  const params = new URLSearchParams(window.location.search)
-  return params.get('taskId') || params.get('task') || DEFAULT_TASK_ID
-}
-
-const currentTaskId = ref(readTaskIdFromUrl())
-const currentTask = computed(() => (
-  taskById.get(currentTaskId.value)?.content || taskById.get(DEFAULT_TASK_ID).content
-))
-
-const syncTaskIdFromUrl = () => {
-  currentTaskId.value = readTaskIdFromUrl()
-}
-
-onMounted(() => {
-  window.addEventListener('popstate', syncTaskIdFromUrl)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('popstate', syncTaskIdFromUrl)
 })
 
 const currentDate = computed(() => {
@@ -166,6 +150,14 @@ const currentDate = computed(() => {
   white-space: nowrap;
 }
 
+.task-route {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+}
+
 .org-name {
   font-size: 13px;
   color: rgba(255, 255, 255, 0.8);
@@ -206,6 +198,10 @@ const currentDate = computed(() => {
 
   .task-text {
     font-size: 12px;
+  }
+
+  .task-route {
+    display: none;
   }
 
 }

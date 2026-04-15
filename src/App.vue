@@ -1,6 +1,11 @@
 <template>
   <div class="dashboard">
-    <DashboardHeader />
+    <DashboardHeader
+      :current-task="currentTask"
+      :current-task-number="currentTaskNumber"
+      :task-count="taskCount"
+      :current-task-url="currentTaskUrl"
+    />
 
     <main class="dashboard-main">
       <FilterPanel
@@ -65,9 +70,11 @@ import MapPanel from './components/dashboard/MapPanel.vue'
 import TrendPanel from './components/dashboard/TrendPanel.vue'
 import { useDashboardState } from './composables/useDashboardState'
 import { useHunanGeoJson } from './composables/useHunanGeoJson'
+import { useTaskRoute } from './composables/useTaskRoute'
 import { MAP_SOURCE_TEXT } from './constants/dashboard'
 
 const { geoJson, cityGeoJson, provinceGeoJson, isGeoJsonLoading, geoJsonError } = useHunanGeoJson()
+const { currentTask, currentTaskNumber, taskCount, currentTaskUrl } = useTaskRoute({ enableKeyboard: true })
 
 const {
   mapMeasures,
@@ -89,7 +96,7 @@ const {
   mapSeriesData,
   trendYears,
   trendSeriesData
-} = useDashboardState(geoJson)
+} = useDashboardState(geoJson, currentTask)
 </script>
 
 <style scoped>

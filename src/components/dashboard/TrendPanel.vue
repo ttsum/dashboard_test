@@ -8,6 +8,8 @@
       ref="trendChartRef"
       class="chart-container"
     ></div>
+
+    <div class="chart-footer">{{ sourceText }}</div>
   </section>
 </template>
 
@@ -21,7 +23,8 @@ const props = defineProps({
   startYear: { type: Number, required: true },
   endYear: { type: Number, required: true },
   trendYears: { type: Array, required: true },
-  trendSeriesData: { type: Array, required: true }
+  trendSeriesData: { type: Array, required: true },
+  sourceText: { type: String, required: true }
 })
 
 const trendChartRef = ref(null)
@@ -63,7 +66,19 @@ useTrendChart({
   min-height: 0;
   min-height: 360px;
   background-color: #fff;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0;
+}
+
+.chart-footer {
+  flex-shrink: 0;
+  margin-top: 6px;
+  padding: 5px 8px;
+  font-size: 10px;
+  font-style: italic;
+  line-height: 1.25;
+  color: #6b7280;
+  background-color: #f3f4f6;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {

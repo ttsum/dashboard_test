@@ -26,11 +26,27 @@ const labelDataCache = new WeakMap()
 const MAP_FILL_OPACITY = 0.9
 const INITIAL_MAP_ZOOM = 1.1
 const COUNTY_LABEL_MIN_ZOOM = 2.35
+const CITY_LABEL_STYLE = {
+  fontSize: 13,
+  paddingX: 8,
+  paddingY: 4,
+  textBorderWidth: 5,
+  collisionGap: 4
+}
+const COUNTY_LABEL_STYLE = {
+  fontSize: 10,
+  paddingX: 5,
+  paddingY: 2,
+  textBorderWidth: 3,
+  collisionGap: 5
+}
 const DEGREE_TO_RADIAN = Math.PI / 180
 const RADIAN_TO_DEGREE = 180 / Math.PI
 const MERCATOR_MAX_LATITUDE = 85.0511287798
 const MAP_DOM_EVENT_OPTIONS = { capture: true, passive: true }
 const ROAM_IDLE_DELAY = 90
+const CLICK_DRAG_TOLERANCE_PX = 5
+const CLICK_DRAG_TOLERANCE_SQUARED = CLICK_DRAG_TOLERANCE_PX ** 2
 const DENSE_COUNTY_LABEL_NAMES = new Set([
   '芙蓉区',
   '天心区',
@@ -367,6 +383,29 @@ const getLegendItemForValue = (value, legendItems) => (
   )
 )
 
+const getRingArea = (ring) => {
+  if (!Array.isArray(ring) || ring.length < 3) {
+    return 0
+  }
+
+  let area = 0
+  for (let index = 0; index < ring.length - 1; index += 1) {
+    const current = ring[index]
+    const next = ring[index + 1]
+    if (!isLngLat(current) || !isLngLat(next)) {
+      continue
+    }
+
+    area += (Number(current[0]) * Number(next[1])) - (Number(next[0]) * Number(current[1]))
+  }
+
+  return Math.abs(area / 2)
+}
+
+const getGeometryArea = (geometry) => (
+  getGeometryRings(geometry).reduce((total, ring) => total + getRingArea(ring), 0)
+)
+
 const buildColoredMapData = (seriesData, legendItems) => (
   seriesData.map((item) => ({
     name: item.name,
@@ -443,6 +482,9 @@ export function useMapChart({
   let manualTooltipEl = null
   let projectedCountyGeometries = null
   let interactionOverlayEl = null
+  let pointerDownPixel = null
+  let hasDraggedSincePointerDown = false
+  let suppressNextClick = false
 
   const getCountyTooltipData = (name) => (
     buildColoredMapData(mapSeriesData.value, mapLegendItems.value)
@@ -619,6 +661,62 @@ export function useMapChart({
 
     onToggleCounty(countyName)
     showCountyTip(countyName, event)
+  }
+
+  const isPrimaryButtonStillPressed = (event) => {
+    const nativeEvent = event?.event || event
+    const buttons = nativeEvent?.buttons
+
+    return buttons == null || (buttons & 1) === 1
+  }
+
+  const hasMovedBeyondClickTolerance = (event) => {
+    if (!pointerDownPixel) {
+      return false
+    }
+
+    const pixel = getEventPixel(event)
+    if (!pixel) {
+      return false
+    }
+
+    const dx = pixel[0] - pointerDownPixel[0]
+    const dy = pixel[1] - pointerDownPixel[1]
+    return (dx * dx) + (dy * dy) > CLICK_DRAG_TOLERANCE_SQUARED
+  }
+
+  const trackPotentialMapDrag = (event) => {
+    if (!pointerDownPixel || hasDraggedSincePointerDown || !isPrimaryButtonStillPressed(event)) {
+      return
+    }
+
+    hasDraggedSincePointerDown = hasMovedBeyondClickTolerance(event)
+  }
+
+  const shouldIgnoreCanvasClick = () => {
+    const shouldIgnore = suppressNextClick || hasDraggedSincePointerDown || isMapRoaming
+
+    suppressNextClick = false
+    pointerDownPixel = null
+    hasDraggedSincePointerDown = false
+
+    return shouldIgnore
+  }
+
+  const handleCanvasMouseDown = (event) => {
+    pointerDownPixel = getEventPixel(event)
+    hasDraggedSincePointerDown = false
+    suppressNextClick = false
+  }
+
+  const handleCanvasMouseUp = (event) => {
+    if (pointerDownPixel && hasMovedBeyondClickTolerance(event)) {
+      hasDraggedSincePointerDown = true
+    }
+
+    suppressNextClick = hasDraggedSincePointerDown
+    pointerDownPixel = null
+    hasDraggedSincePointerDown = false
   }
 
   const findFeatureNameByCoord = (coord, sourceGeoJson) => {
@@ -805,6 +903,11 @@ export function useMapChart({
       return
     }
 
+    if (shouldIgnoreCanvasClick()) {
+      hideCountyTip()
+      return
+    }
+
     const pixel = getEventPixel(event)
     if (!pixel) {
       return
@@ -858,6 +961,7 @@ export function useMapChart({
   }
 
   const handleCanvasMouseMove = (event) => {
+    trackPotentialMapDrag(event)
     pendingMouseMoveEvent = event
 
     if (mouseMoveFrame) {
@@ -952,6 +1056,10 @@ export function useMapChart({
 
   const scheduleLabelVisibilityUpdate = () => {
     isMapRoaming = true
+    if (pointerDownPixel) {
+      hasDraggedSincePointerDown = true
+      suppressNextClick = true
+    }
     invalidateProjectedCountyGeometries()
     if (roamIdleTimer) {
       window.clearTimeout(roamIdleTimer)
@@ -1216,6 +1324,8 @@ export function useMapChart({
       mapChart.on('georoam', scheduleLabelVisibilityUpdate)
       mapChart.getZr().on('globalout', handleCanvasMouseOut)
       chartRef.value.addEventListener('click', handleCanvasClick, MAP_DOM_EVENT_OPTIONS)
+      chartRef.value.addEventListener('mousedown', handleCanvasMouseDown, MAP_DOM_EVENT_OPTIONS)
+      chartRef.value.addEventListener('mouseup', handleCanvasMouseUp, MAP_DOM_EVENT_OPTIONS)
       chartRef.value.addEventListener('mousemove', handleCanvasMouseMove, MAP_DOM_EVENT_OPTIONS)
       chartRef.value.addEventListener('mouseleave', handleCanvasMouseOut, MAP_DOM_EVENT_OPTIONS)
       requestAnimationFrame(() => {
@@ -1271,6 +1381,8 @@ export function useMapChart({
     window.removeEventListener('resize', handleResize)
     mapChart?.getZr().off('globalout', handleCanvasMouseOut)
     chartRef.value?.removeEventListener('click', handleCanvasClick, MAP_DOM_EVENT_OPTIONS)
+    chartRef.value?.removeEventListener('mousedown', handleCanvasMouseDown, MAP_DOM_EVENT_OPTIONS)
+    chartRef.value?.removeEventListener('mouseup', handleCanvasMouseUp, MAP_DOM_EVENT_OPTIONS)
     chartRef.value?.removeEventListener('mousemove', handleCanvasMouseMove, MAP_DOM_EVENT_OPTIONS)
     chartRef.value?.removeEventListener('mouseleave', handleCanvasMouseOut, MAP_DOM_EVENT_OPTIONS)
     mapChart?.off('georoam', scheduleLabelVisibilityUpdate)

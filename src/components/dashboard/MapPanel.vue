@@ -54,8 +54,6 @@
         </div>
       </div>
     </div>
-
-    <div class="map-footer">{{ sourceText }}</div>
   </section>
 </template>
 
@@ -76,8 +74,7 @@ const props = defineProps({
   mapLegendItems: { type: Array, required: true },
   mapSeriesData: { type: Array, required: true },
   selectedCountyNames: { type: Array, required: true },
-  countyNames: { type: Array, required: true },
-  sourceText: { type: String, required: true }
+  countyNames: { type: Array, required: true }
 })
 
 const emit = defineEmits(['toggleCounty'])
@@ -217,18 +214,6 @@ const { resetMapView } = useMapChart({
   font-size: 11px;
   color: #374151;
   white-space: nowrap;
-}
-
-.map-footer {
-  flex-shrink: 0;
-  margin-top: 6px;
-  padding: 5px 8px;
-  font-size: 10px;
-  font-style: italic;
-  line-height: 1.25;
-  color: #6b7280;
-  background-color: #f3f4f6;
-  border-radius: 4px;
 }
 
 @media (max-width: 768px) {

@@ -45,7 +45,6 @@
             :map-series-data="mapSeriesData"
             :selected-county-names="selectedChartMeasures"
             :county-names="chartMeasures"
-            :source-text="MAP_SOURCE_TEXT"
             @toggle-county="toggleCountySelection"
           />
 
@@ -56,6 +55,7 @@
             :end-year="endYear"
             :trend-years="trendYears"
             :trend-series-data="trendSeriesData"
+            :source-text="MAP_SOURCE_TEXT"
           />
         </div>
       </section>

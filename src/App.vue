@@ -1,72 +1,83 @@
 <template>
   <div class="dashboard">
-    <DashboardHeader
-      :current-task="currentTask"
-      :current-task-number="currentTaskNumber"
-      :task-count="taskCount"
-      :current-task-url="currentTaskUrl"
-    />
-
-    <main class="dashboard-main">
-      <section class="dashboard-layout">
-        <div class="dashboard-left">
-          <FilterPanel
-            class="dashboard-filter-panel"
-            :map-measures="mapMeasures"
-            :selected-map-measure="selectedMapMeasure"
-            :map-timeframes="mapTimeframes"
-            :selected-map-timeframe="selectedMapTimeframe"
-            :chart-measures="chartMeasures"
-            :selected-chart-measures="selectedChartMeasures"
-            @update:selected-map-measure="selectedMapMeasure = $event"
-            @update:selected-map-timeframe="selectedMapTimeframe = $event"
-            @update:selected-chart-measures="selectedChartMeasures = $event"
-            @clear-selected-counties="clearSelectedCounties"
-          />
-
-          <TrendPanel
-            class="dashboard-trend-panel"
-            :selected-measure="selectedMeasure"
-            :selected-measure-label="selectedMapMeasure"
-            :start-year="startYear"
-            :end-year="endYear"
-            :min-year="minYear"
-            :max-year="maxYear"
-            :year-range="yearRange"
-            :year-marks="yearMarks"
-            :trend-years="trendYears"
-            :trend-series-data="trendSeriesData"
-            :source-text="MAP_SOURCE_TEXT"
-            @update:start-year="startYear = $event"
-            @update:end-year="endYear = $event"
-            @update:year-range="yearRange = $event"
-          />
-        </div>
-
-        <section class="dashboard-map-area">
-          <MapPanel
-            class="dashboard-map-panel"
-            :geo-json="geoJson"
-            :city-geo-json="cityGeoJson"
-            :province-geo-json="provinceGeoJson"
-            :is-geo-json-loading="isGeoJsonLoading"
-            :geo-json-error="geoJsonError"
-            :selected-measure="selectedMeasure"
-            :selected-measure-label="selectedMapMeasure"
-            :selected-map-timeframe="selectedMapTimeframe"
-            :map-legend-items="mapLegendItems"
-            :map-series-data="mapSeriesData"
-            :selected-county-names="selectedChartMeasures"
-            :county-names="chartMeasures"
-            @toggle-county="toggleCountySelection"
-          />
-        </section>
-      </section>
+    <main v-if="isStageEndVisible" class="task-transition-screen">
+      <div class="task-transition-text">此阶段任务结束，请按ESC退出。</div>
     </main>
+
+    <main v-else-if="isTaskTransitionVisible" class="task-transition-screen">
+      <button type="button" class="task-transition-button" @click="enterNextTask">点击进入下一题</button>
+    </main>
+
+    <template v-else>
+      <DashboardHeader
+        :current-task="currentTask"
+        :current-task-number="currentTaskNumber"
+        :task-count="taskCount"
+        @next-task="showTaskTransition"
+      />
+
+      <main class="dashboard-main">
+        <section class="dashboard-layout">
+          <div class="dashboard-left">
+            <FilterPanel
+              class="dashboard-filter-panel"
+              :map-measures="mapMeasures"
+              :selected-map-measure="selectedMapMeasure"
+              :map-timeframes="mapTimeframes"
+              :selected-map-timeframe="selectedMapTimeframe"
+              :chart-measures="chartMeasures"
+              :selected-chart-measures="selectedChartMeasures"
+              @update:selected-map-measure="selectedMapMeasure = $event"
+              @update:selected-map-timeframe="selectedMapTimeframe = $event"
+              @update:selected-chart-measures="selectedChartMeasures = $event"
+              @clear-selected-counties="clearSelectedCounties"
+            />
+
+            <TrendPanel
+              class="dashboard-trend-panel"
+              :selected-measure="selectedMeasure"
+              :selected-measure-label="selectedMapMeasure"
+              :start-year="startYear"
+              :end-year="endYear"
+              :min-year="minYear"
+              :max-year="maxYear"
+              :year-range="yearRange"
+              :year-marks="yearMarks"
+              :trend-years="trendYears"
+              :trend-series-data="trendSeriesData"
+              :source-text="MAP_SOURCE_TEXT"
+              @update:start-year="startYear = $event"
+              @update:end-year="endYear = $event"
+              @update:year-range="yearRange = $event"
+            />
+          </div>
+
+          <section class="dashboard-map-area">
+            <MapPanel
+              class="dashboard-map-panel"
+              :geo-json="geoJson"
+              :city-geo-json="cityGeoJson"
+              :province-geo-json="provinceGeoJson"
+              :is-geo-json-loading="isGeoJsonLoading"
+              :geo-json-error="geoJsonError"
+              :selected-measure="selectedMeasure"
+              :selected-measure-label="selectedMapMeasure"
+              :selected-map-timeframe="selectedMapTimeframe"
+              :map-legend-items="mapLegendItems"
+              :map-series-data="mapSeriesData"
+              :selected-county-names="selectedChartMeasures"
+              :county-names="chartMeasures"
+              @toggle-county="toggleCountySelection"
+            />
+          </section>
+        </section>
+      </main>
+    </template>
   </div>
 </template>
 
 <script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
 import DashboardHeader from './components/dashboard/DashboardHeader.vue'
 import FilterPanel from './components/dashboard/FilterPanel.vue'
 import MapPanel from './components/dashboard/MapPanel.vue'
@@ -77,7 +88,54 @@ import { useTaskRoute } from './composables/useTaskRoute'
 import { MAP_SOURCE_TEXT } from './constants/dashboard'
 
 const { geoJson, cityGeoJson, provinceGeoJson, isGeoJsonLoading, geoJsonError } = useHunanGeoJson()
-const { currentTask, currentTaskNumber, taskCount, currentTaskUrl } = useTaskRoute({ enableKeyboard: true })
+const { currentTask, currentTaskFlow, currentTaskId, currentTaskNumber, taskCount, goToNextTask } = useTaskRoute()
+const isTaskTransitionVisible = ref(false)
+const isStageEndVisible = ref(false)
+const STAGE_END_ROUTE_KEYS = new Set(['last:1', 'last:6', 'last:11', 'next:5', 'next:10', 'next:15'])
+
+const showTaskTransition = () => {
+  const currentRouteKey = `${currentTaskFlow.value}:${currentTaskId.value}`
+  if (STAGE_END_ROUTE_KEYS.has(currentRouteKey)) {
+    isStageEndVisible.value = true
+    return
+  }
+
+  isTaskTransitionVisible.value = true
+}
+
+const enterNextTask = () => {
+  isTaskTransitionVisible.value = false
+  goToNextTask()
+}
+
+const exitStageEndScreen = () => {
+  isStageEndVisible.value = false
+
+  try {
+    window.close()
+  } catch {
+    // Ignore browser restrictions and fall back below.
+  }
+
+  if (!window.closed && window.history.length > 1) {
+    window.history.back()
+  }
+}
+
+const handleWindowKeydown = (event) => {
+  if (event.code === 'Escape' && isStageEndVisible.value) {
+    event.preventDefault()
+    exitStageEndScreen()
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', handleWindowKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleWindowKeydown)
+})
 
 const {
   mapMeasures,
@@ -116,6 +174,31 @@ const {
   padding: 8px;
   background-color: #e5e7eb;
   overflow: hidden;
+}
+
+.task-transition-screen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #ffffff;
+}
+
+.task-transition-button {
+  padding: 0;
+  font-size: 32px;
+  font-weight: 600;
+  color: #111827;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.task-transition-text {
+  font-size: 32px;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
 }
 
 .dashboard-layout {

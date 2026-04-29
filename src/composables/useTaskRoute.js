@@ -1,52 +1,53 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   DEFAULT_TASK_ID,
-  TASK_ROUTE_PREFIX,
   TASKS,
   TASKS_BY_ID,
   getNextTask,
+  getPreviousTask,
   getTaskById,
   getTaskIndexById
 } from '../constants/tasks'
+
+const DEFAULT_TASK_FLOW = 'next'
+const TASK_FLOW_VALUES = new Set(['next', 'last'])
 
 const normalizeTaskId = (taskId) => (
   TASKS_BY_ID.has(String(taskId)) ? String(taskId) : DEFAULT_TASK_ID
 )
 
-const readTaskIdFromUrl = () => {
-  const hashMatch = window.location.hash.match(/^#\/task\/([^/?#]+)/)
+const normalizeTaskFlow = (taskFlow) => (
+  TASK_FLOW_VALUES.has(String(taskFlow)) ? String(taskFlow) : DEFAULT_TASK_FLOW
+)
+
+const readTaskStateFromUrl = () => {
+  const hashMatch = window.location.hash.match(/^#\/(?:(next|last)\/)?task\/([^/?#]+)/)
   if (hashMatch) {
-    return normalizeTaskId(decodeURIComponent(hashMatch[1]))
+    return {
+      taskFlow: normalizeTaskFlow(hashMatch[1]),
+      taskId: normalizeTaskId(decodeURIComponent(hashMatch[2]))
+    }
   }
 
   const params = new URLSearchParams(window.location.search)
   const queryTaskId = params.get('taskId') || params.get('task')
   if (queryTaskId) {
-    return normalizeTaskId(queryTaskId)
+    return {
+      taskFlow: normalizeTaskFlow(params.get('flow')),
+      taskId: normalizeTaskId(queryTaskId)
+    }
   }
 
-  const pathIndex = window.location.pathname.indexOf(TASK_ROUTE_PREFIX)
-  if (pathIndex >= 0) {
-    const pathTaskId = window.location.pathname
-      .slice(pathIndex + TASK_ROUTE_PREFIX.length)
-      .split('/')[0]
-    return normalizeTaskId(decodeURIComponent(pathTaskId))
+  return {
+    taskFlow: DEFAULT_TASK_FLOW,
+    taskId: DEFAULT_TASK_ID
   }
-
-  return DEFAULT_TASK_ID
 }
 
-const getAppRootPath = () => {
-  const pathIndex = window.location.pathname.indexOf(TASK_ROUTE_PREFIX)
-  if (pathIndex >= 0) {
-    return window.location.pathname.slice(0, pathIndex + 1)
-  }
+const getAppRootPath = () => window.location.pathname
 
-  return window.location.pathname
-}
-
-const buildTaskUrl = (taskId) => (
-  `${getAppRootPath()}#/task/${encodeURIComponent(taskId)}`
+const buildTaskUrl = (taskFlow, taskId) => (
+  `${getAppRootPath()}#/${encodeURIComponent(taskFlow)}/task/${encodeURIComponent(taskId)}`
 )
 
 const isInteractiveTarget = (target) => (
@@ -65,31 +66,40 @@ const isInteractiveTarget = (target) => (
 )
 
 export function useTaskRoute({ enableKeyboard = false } = {}) {
-  const currentTaskId = ref(readTaskIdFromUrl())
+  const initialTaskState = readTaskStateFromUrl()
+  const currentTaskFlow = ref(initialTaskState.taskFlow)
+  const currentTaskId = ref(initialTaskState.taskId)
   const currentTask = computed(() => getTaskById(currentTaskId.value))
   const currentTaskIndex = computed(() => getTaskIndexById(currentTaskId.value))
   const currentTaskNumber = computed(() => currentTaskIndex.value + 1)
   const taskCount = TASKS.length
-  const currentTaskUrl = computed(() => buildTaskUrl(currentTaskId.value))
+  const currentTaskUrl = computed(() => buildTaskUrl(currentTaskFlow.value, currentTaskId.value))
 
-  const syncTaskIdFromUrl = () => {
-    currentTaskId.value = readTaskIdFromUrl()
+  const syncTaskStateFromUrl = () => {
+    const nextTaskState = readTaskStateFromUrl()
+    currentTaskFlow.value = nextTaskState.taskFlow
+    currentTaskId.value = nextTaskState.taskId
   }
 
-  const setTaskId = (taskId, { replace = false } = {}) => {
+  const setTaskId = (taskId, { replace = false, taskFlow = currentTaskFlow.value } = {}) => {
+    const nextTaskFlow = normalizeTaskFlow(taskFlow)
     const nextTaskId = normalizeTaskId(taskId)
-    const nextUrl = buildTaskUrl(nextTaskId)
+    const nextUrl = buildTaskUrl(nextTaskFlow, nextTaskId)
 
+    currentTaskFlow.value = nextTaskFlow
     currentTaskId.value = nextTaskId
     if (replace) {
-      window.history.replaceState({ taskId: nextTaskId }, '', nextUrl)
+      window.history.replaceState({ taskId: nextTaskId, taskFlow: nextTaskFlow }, '', nextUrl)
     } else {
-      window.history.pushState({ taskId: nextTaskId }, '', nextUrl)
+      window.history.pushState({ taskId: nextTaskId, taskFlow: nextTaskFlow }, '', nextUrl)
     }
   }
 
   const goToNextTask = () => {
-    setTaskId(getNextTask(currentTaskId.value).id)
+    const nextTask = currentTaskFlow.value === 'last'
+      ? getPreviousTask(currentTaskId.value)
+      : getNextTask(currentTaskId.value)
+    setTaskId(nextTask.id)
   }
 
   const handleKeydown = (event) => {
@@ -109,17 +119,17 @@ export function useTaskRoute({ enableKeyboard = false } = {}) {
   }
 
   onMounted(() => {
-    setTaskId(currentTaskId.value, { replace: true })
-    window.addEventListener('popstate', syncTaskIdFromUrl)
-    window.addEventListener('hashchange', syncTaskIdFromUrl)
+    setTaskId(currentTaskId.value, { replace: true, taskFlow: currentTaskFlow.value })
+    window.addEventListener('popstate', syncTaskStateFromUrl)
+    window.addEventListener('hashchange', syncTaskStateFromUrl)
     if (enableKeyboard) {
       window.addEventListener('keydown', handleKeydown)
     }
   })
 
   onUnmounted(() => {
-    window.removeEventListener('popstate', syncTaskIdFromUrl)
-    window.removeEventListener('hashchange', syncTaskIdFromUrl)
+    window.removeEventListener('popstate', syncTaskStateFromUrl)
+    window.removeEventListener('hashchange', syncTaskStateFromUrl)
     if (enableKeyboard) {
       window.removeEventListener('keydown', handleKeydown)
     }
@@ -127,6 +137,7 @@ export function useTaskRoute({ enableKeyboard = false } = {}) {
 
   return {
     tasks: TASKS,
+    currentTaskFlow,
     currentTaskId,
     currentTask,
     currentTaskIndex,

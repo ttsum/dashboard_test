@@ -62,7 +62,6 @@ export const TASKS = [
 ]
 
 export const DEFAULT_TASK_ID = TASKS[0].id
-export const TASK_ROUTE_PREFIX = '/task/'
 export const TASKS_BY_ID = new Map(TASKS.map((task) => [task.id, task]))
 
 export const getTaskById = (taskId) => TASKS_BY_ID.get(String(taskId)) || TASKS[0]
@@ -75,4 +74,9 @@ export const getTaskIndexById = (taskId) => {
 export const getNextTask = (taskId) => {
   const currentIndex = getTaskIndexById(taskId)
   return TASKS[(currentIndex + 1) % TASKS.length]
+}
+
+export const getPreviousTask = (taskId) => {
+  const currentIndex = getTaskIndexById(taskId)
+  return TASKS[(currentIndex - 1 + TASKS.length) % TASKS.length]
 }

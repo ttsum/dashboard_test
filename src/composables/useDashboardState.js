@@ -159,7 +159,16 @@ export function useDashboardState(_geoJson, activeTask) {
       }))
   ))
 
+  const resetDashboardState = () => {
+    selectedMapMeasure.value = DEFAULT_MEASURE_LABEL
+    selectedMapTimeframe.value = String(maxYear)
+    selectedChartMeasures.value = [...DEFAULT_SELECTED_COUNTIES]
+    yearRange.value = [minYear, maxYear]
+  }
+
   const applyTaskView = (task) => {
+    resetDashboardState()
+
     const view = task?.view
     if (!view) {
       return

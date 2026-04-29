@@ -19,7 +19,7 @@
         <div class="task-copy">
           <span class="task-text">{{ currentTask.content }}</span>
         </div>
-        <span class="task-meta">空格切换任务 · {{ currentTaskNumber }}/{{ taskCount }}</span>
+        <span class="task-meta">{{ currentTaskNumber }}/{{ taskCount }}</span>
       </div>
     </div>
 
@@ -37,16 +37,19 @@
           {{ item.label }}
         </button>
       </div>
+      <button type="button" class="next-task-button" @click="emit('next-task')">下一题</button>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { ElIcon } from 'element-plus'
 import { TrendCharts } from '@element-plus/icons-vue'
 
-defineProps({
+const emit = defineEmits(['next-task'])
+
+const props = defineProps({
   currentTask: {
     type: Object,
     required: true
@@ -57,10 +60,6 @@ defineProps({
   },
   taskCount: {
     type: Number,
-    required: true
-  },
-  currentTaskUrl: {
-    type: String,
     required: true
   }
 })
@@ -76,6 +75,13 @@ const selectedVerdict = ref('')
 const toggleVerdict = (value) => {
   selectedVerdict.value = selectedVerdict.value === value ? '' : value
 }
+
+watch(
+  () => props.currentTaskNumber,
+  () => {
+    selectedVerdict.value = ''
+  }
+)
 </script>
 
 <style scoped>
@@ -193,6 +199,7 @@ const toggleVerdict = (value) => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 10px;
 }
 
 .verdict-panel {
@@ -253,6 +260,27 @@ const toggleVerdict = (value) => {
   border-color: rgba(191, 219, 254, 0.88);
 }
 
+.next-task-button {
+  min-width: 92px;
+  min-height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff8e6;
+  background: linear-gradient(135deg, rgba(255, 214, 102, 0.88), rgba(245, 158, 11, 0.92));
+  border: 1px solid rgba(255, 236, 179, 0.72);
+  border-radius: 12px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.next-task-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.32);
+}
+
 @media (max-width: 980px) {
   .dashboard-header {
     gap: 10px;
@@ -277,6 +305,10 @@ const toggleVerdict = (value) => {
     font-size: 10px;
   }
 
+  .header-right {
+    gap: 6px;
+  }
+
   .verdict-panel {
     gap: 4px;
     padding: 5px 6px 5px 10px;
@@ -292,6 +324,13 @@ const toggleVerdict = (value) => {
     min-height: 30px;
     padding: 0 8px;
     font-size: 11px;
+  }
+
+  .next-task-button {
+    min-width: 78px;
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
   }
 }
 

@@ -8,31 +8,44 @@
     />
 
     <main class="dashboard-main">
-      <FilterPanel
-        :map-measures="mapMeasures"
-        :selected-map-measure="selectedMapMeasure"
-        :map-timeframes="mapTimeframes"
-        :selected-map-timeframe="selectedMapTimeframe"
-        :chart-measures="chartMeasures"
-        :selected-chart-measures="selectedChartMeasures"
-        :min-year="minYear"
-        :max-year="maxYear"
-        :start-year="startYear"
-        :end-year="endYear"
-        :year-range="yearRange"
-        :year-marks="yearMarks"
-        @update:selected-map-measure="selectedMapMeasure = $event"
-        @update:selected-map-timeframe="selectedMapTimeframe = $event"
-        @update:selected-chart-measures="selectedChartMeasures = $event"
-        @update:start-year="startYear = $event"
-        @update:end-year="endYear = $event"
-        @update:year-range="yearRange = $event"
-        @clear-selected-counties="clearSelectedCounties"
-      />
+      <section class="dashboard-layout">
+        <div class="dashboard-left">
+          <FilterPanel
+            class="dashboard-filter-panel"
+            :map-measures="mapMeasures"
+            :selected-map-measure="selectedMapMeasure"
+            :map-timeframes="mapTimeframes"
+            :selected-map-timeframe="selectedMapTimeframe"
+            :chart-measures="chartMeasures"
+            :selected-chart-measures="selectedChartMeasures"
+            @update:selected-map-measure="selectedMapMeasure = $event"
+            @update:selected-map-timeframe="selectedMapTimeframe = $event"
+            @update:selected-chart-measures="selectedChartMeasures = $event"
+            @clear-selected-counties="clearSelectedCounties"
+          />
 
-      <section class="visualization-area">
-        <div class="viz-row">
+          <TrendPanel
+            class="dashboard-trend-panel"
+            :selected-measure="selectedMeasure"
+            :selected-measure-label="selectedMapMeasure"
+            :start-year="startYear"
+            :end-year="endYear"
+            :min-year="minYear"
+            :max-year="maxYear"
+            :year-range="yearRange"
+            :year-marks="yearMarks"
+            :trend-years="trendYears"
+            :trend-series-data="trendSeriesData"
+            :source-text="MAP_SOURCE_TEXT"
+            @update:start-year="startYear = $event"
+            @update:end-year="endYear = $event"
+            @update:year-range="yearRange = $event"
+          />
+        </div>
+
+        <section class="dashboard-map-area">
           <MapPanel
+            class="dashboard-map-panel"
             :geo-json="geoJson"
             :city-geo-json="cityGeoJson"
             :province-geo-json="provinceGeoJson"
@@ -47,17 +60,7 @@
             :county-names="chartMeasures"
             @toggle-county="toggleCountySelection"
           />
-
-          <TrendPanel
-            :selected-measure="selectedMeasure"
-            :selected-measure-label="selectedMapMeasure"
-            :start-year="startYear"
-            :end-year="endYear"
-            :trend-years="trendYears"
-            :trend-series-data="trendSeriesData"
-            :source-text="MAP_SOURCE_TEXT"
-          />
-        </div>
+        </section>
       </section>
     </main>
   </div>
@@ -110,16 +113,42 @@ const {
 .dashboard-main {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   padding: 8px;
   background-color: #e5e7eb;
   overflow: hidden;
 }
 
-.visualization-area {
-  flex: 1;
+.dashboard-layout {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(640px, 0.56fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.dashboard-left {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dashboard-filter-panel {
+  flex: 0 0 auto;
+}
+
+.dashboard-trend-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.dashboard-trend-panel :deep(.chart-container) {
+  min-height: 240px;
+}
+
+.dashboard-map-area {
+  min-width: 0;
   min-height: 0;
   padding: 8px;
   background-color: #fff;
@@ -127,21 +156,23 @@ const {
   overflow: hidden;
 }
 
-.viz-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.dashboard-map-panel {
   height: 100%;
-  min-height: 0;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1180px) {
   .dashboard-main {
     overflow-y: auto;
   }
 
-  .viz-row {
+  .dashboard-layout {
     grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100%;
+  }
+
+  .dashboard-map-area {
+    min-height: 520px;
   }
 }
 </style>

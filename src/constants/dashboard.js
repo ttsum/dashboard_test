@@ -3,7 +3,7 @@ import { COUNTIES, MEASURE_CONFIG, YEAR_OPTIONS } from '../dashboardData'
 export { COUNTIES, MEASURE_CONFIG, YEAR_OPTIONS }
 
 export const DEFAULT_MEASURE_LABEL = MEASURE_CONFIG.population.displayLabel
-export const DEFAULT_SELECTED_COUNTIES = ['芙蓉区']
+export const DEFAULT_SELECTED_COUNTIES = []
 
 export const MAP_NAME = 'hunan-counties'
 export const MAP_SOURCE_TEXT = '数据来源：中国县域统计数据 与湖南省行政区划边界数据'
@@ -22,6 +22,6 @@ export const SERIES_COLORS = ['#E91E63', '#9C27B0', '#00BCD4', '#FF9800', '#4CAF
 
 export const TREND_LAYOUT = {
   gridLeft: 58,
-  legendPanelWidth: 210,
-  legendLeftPadding: 10
+  legendPanelWidth: 120,
+  legendLeftPadding: 8
 }

@@ -33,10 +33,10 @@ export function useTrendChart({
         )
       },
       grid: {
-        top: 24,
+        top: 68,
         left: TREND_LAYOUT.gridLeft,
         right: TREND_LAYOUT.legendPanelWidth,
-        bottom: 34,
+        bottom: 16,
         containLabel: true
       },
       xAxis: {
@@ -44,7 +44,7 @@ export function useTrendChart({
         boundaryGap: false,
         data: trendYears.value.map((year) => String(year)),
         axisLabel: {
-          rotate: 45,
+          rotate: 0,
           fontSize: 11,
           hideOverlap: false
         }

@@ -1,6 +1,6 @@
 <template>
   <section class="filter-panel">
-    <div class="filter-column">
+    <div class="filter-column measure-filter">
       <div class="filter-header">地图指标</div>
       <ElRadioGroup
         :model-value="selectedMapMeasure"
@@ -18,7 +18,7 @@
       </ElRadioGroup>
     </div>
 
-    <div class="filter-column">
+    <div class="filter-column map-year-filter">
       <div class="filter-header">年份选择</div>
       <ElRadioGroup
         :model-value="selectedMapTimeframe"
@@ -36,19 +36,28 @@
       </ElRadioGroup>
     </div>
 
-    <div class="filter-column">
+    <div class="filter-column county-filter">
       <div class="filter-header filter-header-row">
         <span>区县选择</span>
-        <ElButton
-          type="primary"
-          link
-          size="small"
-          class="clear-btn"
-          :disabled="selectedChartMeasures.length === 0"
-          @click="emit('clear-selected-counties')"
-        >
+        <div class="county-header-tools">
+          <ElInput
+            v-model="countySearchKeyword"
+            clearable
+            size="small"
+            class="county-search-input"
+            placeholder="搜索区县"
+          />
+          <ElButton
+            type="primary"
+            link
+            size="small"
+            class="clear-btn"
+            :disabled="selectedChartMeasures.length === 0"
+            @click="emit('clear-selected-counties')"
+          >
           一键清空
         </ElButton>
+        </div>
       </div>
 
       <ElCheckboxGroup
@@ -57,7 +66,7 @@
         @update:model-value="emit('update:selected-chart-measures', $event)"
       >
         <ElCheckbox
-          v-for="item in chartMeasures"
+          v-for="item in filteredChartMeasures"
           :key="item"
           :label="item"
           class="filter-checkbox"
@@ -67,80 +76,48 @@
       </ElCheckboxGroup>
     </div>
 
-    <div class="filter-column">
-      <div class="filter-header">时间范围</div>
-
-      <div class="timeframe-inputs">
-        <ElInputNumber
-          :model-value="startYear"
-          :min="minYear"
-          :max="maxYear"
-          :controls="false"
-          size="small"
-          class="year-input"
-          @update:model-value="emit('update:start-year', $event)"
-        />
-        <span class="year-separator">至</span>
-        <ElInputNumber
-          :model-value="endYear"
-          :min="minYear"
-          :max="maxYear"
-          :controls="false"
-          size="small"
-          class="year-input"
-          @update:model-value="emit('update:end-year', $event)"
-        />
-      </div>
-
-      <div class="slider-container">
-        <ElSlider
-          :model-value="yearRange"
-          range
-          :min="minYear"
-          :max="maxYear"
-          :marks="yearMarks"
-          @update:model-value="emit('update:year-range', $event)"
-        />
-      </div>
-    </div>
   </section>
 </template>
 
 <script setup>
+import { computed, ref } from 'vue'
 import {
   ElButton,
   ElCheckbox,
   ElCheckboxGroup,
-  ElInputNumber,
+  ElInput,
   ElRadio,
-  ElRadioGroup,
-  ElSlider
+  ElRadioGroup
 } from 'element-plus'
 
-defineProps({
+const props = defineProps({
   mapMeasures: { type: Array, required: true },
   selectedMapMeasure: { type: String, required: true },
   mapTimeframes: { type: Array, required: true },
   selectedMapTimeframe: { type: String, required: true },
   chartMeasures: { type: Array, required: true },
-  selectedChartMeasures: { type: Array, required: true },
-  minYear: { type: Number, required: true },
-  maxYear: { type: Number, required: true },
-  startYear: { type: Number, required: true },
-  endYear: { type: Number, required: true },
-  yearRange: { type: Array, required: true },
-  yearMarks: { type: Object, required: true }
+  selectedChartMeasures: { type: Array, required: true }
 })
 
 const emit = defineEmits([
   'update:selected-map-measure',
   'update:selected-map-timeframe',
   'update:selected-chart-measures',
-  'update:start-year',
-  'update:end-year',
-  'update:year-range',
   'clear-selected-counties'
 ])
+
+const countySearchKeyword = ref('')
+const filteredChartMeasures = computed(() => {
+  const keyword = countySearchKeyword.value.trim().toLowerCase()
+
+  if (!keyword) {
+    return props.chartMeasures
+  }
+
+  return props.chartMeasures.filter((item) => (
+    String(item).toLowerCase().includes(keyword)
+  ))
+})
 </script>
 
 <style scoped>
@@ -151,9 +128,11 @@ const emit = defineEmits([
   --option-line-height: 1.4;
   --option-color: #4b5563;
   --option-label-gap: 10px;
-  --filter-column-height: 152px;
+  --filter-height: 260px;
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1.7fr 1.1fr;
+  grid-template-columns: minmax(150px, 0.7fr) minmax(150px, 0.7fr) minmax(0, 1.9fr);
+  grid-template-areas:
+    "measure map-year county";
   align-items: start;
   gap: 8px;
   padding: 8px;
@@ -163,7 +142,6 @@ const emit = defineEmits([
 }
 
 .filter-column {
-  height: var(--filter-column-height);
   min-height: 0;
   padding: 6px;
   display: flex;
@@ -172,6 +150,21 @@ const emit = defineEmits([
   border: 1px solid #e5e7eb;
   border-radius: 4px;
   overflow: hidden;
+}
+
+.measure-filter {
+  grid-area: measure;
+  height: var(--filter-height);
+}
+
+.map-year-filter {
+  grid-area: map-year;
+  height: var(--filter-height);
+}
+
+.county-filter {
+  grid-area: county;
+  height: var(--filter-height);
 }
 
 .filter-header {
@@ -186,8 +179,19 @@ const emit = defineEmits([
 .filter-header-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+}
+
+.county-header-tools {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.county-header-tools .clear-btn {
+  margin-left: auto;
 }
 
 .clear-btn {
@@ -200,30 +204,45 @@ const emit = defineEmits([
   display: grid;
   gap: 4px 6px;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .measure-radio-group {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .year-radio-group {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .filter-radio {
+  min-width: 0;
   margin-right: 0 !important;
 }
 
 .filter-checkbox-group {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 3px 6px;
   flex: 1;
   min-height: 0;
   padding-right: 4px;
   overflow-y: auto;
   align-content: start;
+}
+
+.county-search-input {
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.county-header-tools .county-search-input {
+  width: 122px;
+}
+
+.county-search-input :deep(.el-input__wrapper) {
+  min-height: 28px;
 }
 
 .filter-checkbox {
@@ -243,7 +262,7 @@ const emit = defineEmits([
 }
 
 .measure-radio-group :deep(.el-radio__label) {
-  white-space: normal;
+  white-space: nowrap;
 }
 
 .year-radio-group :deep(.el-radio__label),
@@ -251,65 +270,28 @@ const emit = defineEmits([
   white-space: nowrap;
 }
 
-.timeframe-inputs {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.year-input {
-  width: 96px !important;
-}
-
-.year-input :deep(.el-input__wrapper) {
-  min-height: 36px;
-}
-
-.year-input :deep(.el-input__inner) {
-  height: 36px;
-  padding: 0 8px;
-  font-size: 13px;
-  line-height: 36px;
-  text-align: center;
-}
-
-.year-separator {
-  font-size: 13px;
-  color: #6b7280;
-}
-
-.slider-container {
-  flex: 1;
-  min-height: 0;
-  padding: 0 20px 6px;
-}
-
-.slider-container :deep(.el-slider) {
-  --el-slider-height: 4px;
-  --el-slider-button-size: 12px;
-}
-
-.slider-container :deep(.el-slider__marks-text) {
-  font-size: 11px;
-  color: #9ca3af;
-}
-
 @media (max-width: 1280px) {
   .filter-panel {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: minmax(150px, 0.7fr) minmax(150px, 0.7fr) minmax(0, 1.9fr);
   }
 }
 
 @media (max-width: 768px) {
   .filter-panel {
     grid-template-columns: 1fr;
-    --filter-column-height: auto;
+    grid-template-areas:
+      "measure"
+      "map-year"
+      "county";
   }
 
   .filter-column {
     height: auto;
     max-height: 148px;
+  }
+
+  .county-filter {
+    max-height: 150px;
   }
 }
 </style>

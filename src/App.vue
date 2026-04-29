@@ -58,6 +58,7 @@
               :geo-json="geoJson"
               :city-geo-json="cityGeoJson"
               :province-geo-json="provinceGeoJson"
+              :current-task-number="currentTaskNumber"
               :is-geo-json-loading="isGeoJsonLoading"
               :geo-json-error="geoJsonError"
               :selected-measure="selectedMeasure"

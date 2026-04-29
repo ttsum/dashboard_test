@@ -463,6 +463,7 @@ export function useMapChart({
   geoJson,
   cityGeoJson,
   provinceGeoJson,
+  taskResetKey,
   mapLegendItems,
   mapSeriesData,
   selectedMeasure,
@@ -991,6 +992,24 @@ export function useMapChart({
     return Number.isFinite(zoom) ? zoom : INITIAL_MAP_ZOOM
   }
 
+  const getCurrentGeoRoamState = () => {
+    const option = mapChart?.getOption()
+    const geoOption = option?.geo?.[0]
+    if (!geoOption) {
+      return null
+    }
+
+    const zoom = Number(geoOption.zoom)
+    const center = Array.isArray(geoOption.center) && geoOption.center.length >= 2
+      ? geoOption.center.map((value) => Number(value))
+      : null
+
+    return {
+      zoom: Number.isFinite(zoom) ? zoom : INITIAL_MAP_ZOOM,
+      center: center?.every((value) => Number.isFinite(value)) ? center : null
+    }
+  }
+
   const getCountyLabelVisibilityState = (zoom) => {
     if (zoom < COUNTY_LABEL_MIN_ZOOM) {
       return 'hidden'
@@ -1079,7 +1098,7 @@ export function useMapChart({
     })
   }
 
-  const updateMapChart = () => {
+  const updateMapChart = ({ preserveRoam = false } = {}) => {
     if (!mapChart || !geoJson.value || !cityGeoJson.value || !provinceGeoJson.value) {
       console.log('updateMapChart skipped:', {
         mapChart: !!mapChart,
@@ -1100,6 +1119,7 @@ export function useMapChart({
       geoJson.value,
       selectedCountyNames.value
     )
+    const currentGeoRoamState = preserveRoam ? getCurrentGeoRoamState() : null
 
     countyLabelVisibilityState = ''
     mapChart.setOption({
@@ -1134,7 +1154,8 @@ export function useMapChart({
         map: MAP_NAME,
         projection: MERCATOR_PROJECTION,
         roam: true,
-        zoom: INITIAL_MAP_ZOOM,
+        zoom: currentGeoRoamState?.zoom ?? INITIAL_MAP_ZOOM,
+        ...(currentGeoRoamState?.center ? { center: currentGeoRoamState.center } : {}),
         regions: buildGeoRegions(coloredMapData, selectedCountyNames.value),
         scaleLimit: {
           min: 1,
@@ -1310,7 +1331,7 @@ export function useMapChart({
 
     invalidateProjectedCountyGeometries()
     syncMapSelection()
-    applyLabelVisibility(INITIAL_MAP_ZOOM)
+    applyLabelVisibility(currentGeoRoamState?.zoom ?? INITIAL_MAP_ZOOM)
   }
 
   const initMapChart = () => {
@@ -1347,7 +1368,7 @@ export function useMapChart({
     }
 
     hideCountyTip()
-    updateMapChart()
+    updateMapChart({ preserveRoam: false })
     requestAnimationFrame(() => {
       mapChart?.resize()
       syncMapSelection()
@@ -1355,12 +1376,25 @@ export function useMapChart({
   }
 
   watch(
-    [geoJson, cityGeoJson, provinceGeoJson, mapLegendItems, mapSeriesData, selectedMeasure],
+    [geoJson, cityGeoJson, provinceGeoJson],
     () => {
       initMapChart()
       updateMapChart()
     },
     { deep: true, immediate: true }
+  )
+
+  watch(
+    [mapLegendItems, mapSeriesData, selectedMeasure, selectedMapTimeframe],
+    () => {
+      if (!mapChart) {
+        initMapChart()
+        return
+      }
+
+      updateMapChart({ preserveRoam: true })
+    },
+    { deep: true }
   )
 
   watch(
@@ -1371,6 +1405,10 @@ export function useMapChart({
     },
     { deep: true }
   )
+
+  watch(taskResetKey, () => {
+    resetMapView()
+  })
 
   onMounted(() => {
     initMapChart()
